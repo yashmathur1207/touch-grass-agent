@@ -2,6 +2,8 @@ import os
 import warnings
 import sentry_sdk
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from agent import TouchGrassAgent
@@ -21,15 +23,17 @@ if dsn_url and dsn_url != "your_sentry_dsn_here":
     )
 
 app = FastAPI(title="Touch Grass Agent API")
-from fastapi.middleware.cors import CORSMiddleware
 
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins for the hackathon demo
+    allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize the agent orchestrator
 agent = TouchGrassAgent()
 
 
@@ -40,21 +44,22 @@ class TelemetryInput(BaseModel):
     error_rate_pct: float
     time_since_last_break_mins: int
 
+
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Ready to touch grass."}
 
+
 @app.post("/api/evaluate")
 async def evaluate_session(telemetry: TelemetryInput):
-    # This block wraps the agent in a Sentry trace!
     with sentry_sdk.start_transaction(op="task", name="Evaluate Burnout"):
-        
-        # Convert the incoming Pydantic data to a standard dictionary
         data = telemetry.model_dump()
-        
-        # Run the agent
         result = await agent.evaluate_and_intervene(data)
         return result
+
+
+# Expose project directory so the frontend can stream 'directive.mp3'
+app.mount("/audio", StaticFiles(directory="."), name="audio")
 
 if __name__ == "__main__":
     import uvicorn
