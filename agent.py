@@ -1,4 +1,3 @@
-from elevenlabs_tool import VoiceAgent
 import os
 import asyncio
 from dotenv import load_dotenv
@@ -6,6 +5,7 @@ from backboard import BackboardClient
 
 from tabpfn_tool import FatigueClassifier
 from serp_tool import OutdoorScout
+from elevenlabs_tool import VoiceAgent
 
 load_dotenv()
 
@@ -48,20 +48,27 @@ class TouchGrassAgent:
             f"The weather outside is {weather}. Tell them to go to {target_park} right now."
         )
 
+        fallback_message = (
+            f"SYSTEM OVERRIDE: Warning! {burnout_prob * 100:.0f}% fatigue reached. "
+            f"Drop the keyboard and march to {target_park}. "
+            f"It is {weather} outside, you have no excuse. Go touch grass!"
+        )
+
         if self.client:
-            response = await self.client.send_message(
-                message=user_prompt,
-                system=system_prompt,
-                model="google/gemma-2-9b-it",
-                thread_id=self.developer_thread_id
-            )
-            agent_message = response.content
+            try:
+                # Pass user_prompt as a direct positional argument, removing 'message='
+                response = await self.client.send_message(
+                    user_prompt,
+                    system=system_prompt,
+                    model="google/gemma-2-9b-it",
+                    thread_id=self.developer_thread_id
+                )
+                agent_message = response.content
+            except Exception as e:
+                print(f"[Backboard Error Triggered]: {e}")
+                agent_message = fallback_message
         else:
-            agent_message = (
-                f"SYSTEM OVERRIDE: Warning! {burnout_prob * 100:.0f}% fatigue reached. "
-                f"Drop the keyboard and march to {target_park}. "
-                f"It is {weather} outside, you have no excuse. Go touch grass!"
-            )
+            agent_message = fallback_message
 
         # Generate the audio file from the agent's message
         audio_file = self.voice.generate_audio(agent_message)
@@ -74,4 +81,3 @@ class TouchGrassAgent:
             "agent_directive": agent_message,
             "audio_file_generated": bool(audio_file)
         }
-        
