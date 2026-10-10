@@ -37,21 +37,20 @@ class FatigueClassifier:
 
     def predict_burnout(self, current_session: dict) -> float:
         """Takes real-time session telemetry and returns a probability score."""
-        if not self.api_online:
-            # Fallback mock score if the API is down during the live demo
-            print("[TabPFN] API offline, using fallback heuristics.")
-            if current_session.get('error_rate_pct', 0) > 0.10:
-                return 0.88
-            return 0.15
-
         try:
+            # Attempt to use the cloud model
             X_new = pd.DataFrame([current_session])[self.features]
             probabilities = self.clf.predict_proba(X_new)
             burnout_probability = probabilities[0][1] 
             return round(float(burnout_probability), 4)
         except Exception as e:
-            print(f"[TabPFN Error during prediction]: {e}")
-            return 0.88 # Emergency fallback
+            # If the model isn't fitted (API was down during startup) or fails here, use the fallback
+            print(f"[TabPFN Fallback Triggered]: {e}")
+            
+            # Simple heuristic mock logic based on the payload you just sent
+            if current_session.get('error_rate_pct', 0) > 0.10:
+                return 0.88  # High burnout risk
+            return 0.15      # Healthy state
 
     def _generate_synthetic_baseline(self) -> pd.DataFrame:
         """Generates 200 rows of mock telemetry to simulate past coding sessions."""
