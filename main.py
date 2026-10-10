@@ -21,7 +21,17 @@ if dsn_url and dsn_url != "your_sentry_dsn_here":
     )
 
 app = FastAPI(title="Touch Grass Agent API")
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins for the hackathon demo
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
+    allow_headers=["*"],
+)
 agent = TouchGrassAgent()
+
 
 # Define the expected incoming data structure
 class TelemetryInput(BaseModel):
