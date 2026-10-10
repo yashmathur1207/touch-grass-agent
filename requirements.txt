@@ -56,7 +56,7 @@ six==1.17.0
 skrub==0.10.1
 starlette==1.7.0
 sympy==1.14.0
-tabpfn==9.1.0
+tabpfn-client
 threadpoolctl==3.7.0
 tomli==2.5.0
 torch==2.14.1

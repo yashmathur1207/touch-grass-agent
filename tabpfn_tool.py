@@ -1,14 +1,18 @@
+import os
 import pandas as pd
 import numpy as np
-from tabpfn import TabPFNClassifier
 import warnings
 
-# Suppress sklearn warnings for clean terminal output
+# Use the cloud client instead of the local heavy model
+from tabpfn_client import TabPFNClassifier 
+
+# Suppress warnings for clean terminal output
 warnings.filterwarnings("ignore", category=UserWarning)
 
 class FatigueClassifier:
     def __init__(self):
-        # Initialize the TabPFN foundation model
+        # Initialize the TabPFN foundation model to use the cloud API
+        # It automatically looks for the TABPFN_TOKEN environment variable
         self.clf = TabPFNClassifier()
         self.features = [
             'session_duration_mins', 
@@ -24,7 +28,7 @@ class FatigueClassifier:
         self.X_train = self.df[self.features]
         self.y_train = self.df['burnout_state']
         
-        # Fit the TabPFN model (Zero-shot style training)
+        # Fit the TabPFN model (Zero-shot style training sent to the cloud)
         self.clf.fit(self.X_train, self.y_train)
 
     def predict_burnout(self, current_session: dict) -> float:
