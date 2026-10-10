@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins for the hackathon demo
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],  # Allows all methods (POST, GET, etc.)
     allow_headers=["*"],
 )
