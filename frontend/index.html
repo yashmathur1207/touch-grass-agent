@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Touch Grass | Agent Terminal</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen flex items-center justify-center p-6 font-sans">
+
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+        
+        <!-- Header -->
+        <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-800/30">
+            <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <i class="fa-solid fa-leaf text-emerald-400"></i> Touch Grass Agent
+            </h1>
+            <span class="flex h-3 w-3 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+        </div>
+
+        <!-- Telemetry Data (Mocked for Demo) -->
+        <div class="p-6">
+            <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Current Session Telemetry</h2>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <span class="block text-slate-400 mb-1">Duration</span>
+                    <span class="text-white font-mono font-medium">185 mins</span>
+                </div>
+                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                    <span class="block text-slate-400 mb-1">Error Rate</span>
+                    <span class="text-red-400 font-mono font-medium">15.0%</span>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button id="evaluateBtn" onclick="runEvaluation()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20">
+                <i class="fa-solid fa-microchip"></i> Evaluate Developer State
+            </button>
+        </div>
+
+        <!-- Results Area (Hidden by Default) -->
+        <div id="resultArea" class="hidden border-t border-slate-800 p-6 bg-slate-900">
+            
+            <!-- Warning State -->
+            <div id="interventionState" class="hidden flex-col items-center text-center">
+                <div class="h-16 w-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mb-4 border border-red-500/20">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Burnout Warning</h3>
+                <p id="probabilityText" class="text-red-400 font-mono text-sm mb-6 pb-6 border-b border-slate-800 w-full"></p>
+                
+                <div class="w-full space-y-3 text-left">
+                    <div class="flex items-start gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <i class="fa-solid fa-location-dot text-emerald-400 mt-1"></i>
+                        <div>
+                            <span class="block text-xs text-slate-400">Target Location</span>
+                            <span id="targetPark" class="text-sm font-medium text-white"></span>
+                            <span id="weatherInfo" class="block text-xs text-slate-400 mt-0.5"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-3 bg-indigo-900/20 p-3 rounded-lg border border-indigo-500/20">
+                        <i class="fa-solid fa-robot text-indigo-400 mt-1"></i>
+                        <div>
+                            <span class="block text-xs text-indigo-300/70">Agent Directive</span>
+                            <span id="agentMessage" class="text-sm font-medium text-indigo-100 italic"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function runEvaluation() {
+            const btn = document.getElementById('evaluateBtn');
+            const resultArea = document.getElementById('resultArea');
+            const interventionState = document.getElementById('interventionState');
+            
+            // UI Loading State
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Analyzing Metrics...';
+            btn.classList.replace('bg-indigo-600', 'bg-slate-700');
+            resultArea.classList.add('hidden');
+
+            const payload = {
+                session_duration_mins: 185,
+                keystrokes_per_min: 25,
+                error_rate_pct: 0.15,
+                time_since_last_break_mins: 185
+            };
+
+            try {
+                const response = await fetch('https://touch-grass-agent.onrender.com/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                // Reset button
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-microchip"></i> Evaluate Developer State';
+                btn.classList.replace('bg-slate-700', 'bg-indigo-600');
+                
+                // Show results
+                resultArea.classList.remove('hidden');
+
+                if (data.intervention_required) {
+                    interventionState.classList.remove('hidden');
+                    interventionState.classList.add('flex');
+                    
+                    // Fixed the multiplication bug here
+                    document.getElementById('probabilityText').innerText = `Fatigue Probability: ${Math.round(data.burnout_probability * 100)}%`;
+                    document.getElementById('targetPark').innerText = data.target_location;
+                    document.getElementById('weatherInfo').innerText = data.weather;
+                    document.getElementById('agentMessage').innerText = `"${data.agent_directive}"`;
+
+                    // Added the audio playback feature
+                   // Added the audio playback feature
+                    if (data.audio_file_generated) {
+                        const voiceLine = new Audio('https://touch-grass-agent.onrender.com/audio/directive.mp3');
+                        voiceLine.play().catch(err => console.error("Audio playback failed:", err));
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                btn.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Connection Failed';
+            }
+        }
+    </script>
+</body>
+</html>
